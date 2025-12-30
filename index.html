@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPUB Image Optimizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f4f4f9;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { margin-top: 0; color: #333; }
+        .drop-zone {
+            border: 2px dashed #007aff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 20px;
+        }
+        .drop-zone:hover { background: #f0f7ff; }
+        #status { margin-top: 20px; font-weight: bold; }
+        .progress-container {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: #007aff;
+            border-radius: 4px;
+            transition: width 0.1s;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] { flex-grow: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EPUB Optimizer</h1>
+        <p>Reduce EPUB size by compressing images. Works entirely in your browser.</p>
+        
+        <div class="controls">
+            <label for="quality">Quality: <span id="quality-val">80</span>%</label>
+            <input type="range" id="quality" min="10" max="100" value="80">
+        </div>
+
+        <div class="drop-zone" id="drop-zone">
+            Click or drag EPUB file here
+            <input type="file" id="file-input" accept=".epub" style="display: none;">
+        </div>
+
+        <div id="status">Ready</div>
+        <div class="progress-container" id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const status = document.getElementById('status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const qualityInput = document.getElementById('quality');
+        const qualityVal = document.getElementById('quality-val');
+
+        qualityInput.addEventListener('input', () => {
+            qualityVal.textContent = qualityInput.value;
+        });
+
+        dropZone.onclick = () => fileInput.click();
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f0f7ff';
+        };
+
+        dropZone.ondragleave = () => {
+            dropZone.style.background = 'white';
+        };
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.style.background = 'white';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.epub')) {
+                processFile(file);
+            }
+        };
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        };
+
+        async function processFile(file) {
+            status.textContent = "Extracting EPUB...";
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const newZip = new JSZip();
+                const quality = parseInt(qualityInput.value) / 100;
+                
+                const fileList = Object.keys(zip.files);
+                let processedCount = 0;
+
+                // EPUB standard: mimetype must be first and uncompressed
+                if (zip.file("mimetype")) {
+                    newZip.file("mimetype", await zip.file("mimetype").async("string"), { compression: "STORE" });
+                }
+
+                for (const path of fileList) {
+                    if (path === "mimetype") continue;
+
+                    const entry = zip.file(path);
+                    if (!entry || entry.dir) {
+                        if (entry && entry.dir) newZip.folder(path);
+                        continue;
+                    }
+
+                    const isImage = /\.(jpg|jpeg|png)$/i.test(path);
+                    
+                    if (isImage) {
+                        status.textContent = `Optimizing ${path.split('/').pop()}...`;
+                        const blob = await entry.async("blob");
+                        const optimizedBlob = await optimizeImage(blob, quality);
+                        newZip.file(path, optimizedBlob);
+                    } else {
+                        newZip.file(path, await entry.async("blob"));
+                    }
+
+                    processedCount++;
+                    progressBar.style.width = `${(processedCount / fileList.length) * 100}%`;
+                }
+
+                status.textContent = "Packaging EPUB...";
+                const content = await newZip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+                
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name.replace('.epub', ' (Optimized).epub');
+                a.click();
+                
+                status.textContent = "Done! Download started.";
+                progressBar.style.width = '100%';
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Error: " + err.message;
+            }
+        }
+
+        async function optimizeImage(blob, quality) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Always convert to JPEG for best compression in books
+                    canvas.toBlob((result) => {
+                        resolve(result || blob);
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = () => resolve(blob);
+                img.src = URL.createObjectURL(blob);
+            });
+        }
+    </script>
+</body>
+</html>
+
