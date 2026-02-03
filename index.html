@@ -5,54 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EPUB Image Optimizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --navy: #111a3a;
+            --navy-ink: #0a1026;
+            --cream: #f6f1e7;
+            --cream-strong: #efe6d3;
+            --accent: #1b2a5c;
+        }
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 20px;
+            font-family: "DM Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+            max-width: 760px;
+            margin: 32px auto 80px;
+            padding: 24px;
             line-height: 1.6;
-            background-color: #f4f4f9;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(17, 26, 58, 0.06) 0 12px,
+                    transparent 12px 24px
+                ),
+                var(--cream);
+            color: var(--navy);
         }
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--cream);
+            padding: 28px;
+            border: 3px solid var(--navy);
+            box-shadow: 10px 10px 0 var(--navy-ink);
         }
-        h1 { margin-top: 0; color: #333; }
-        .drop-zone {
-            border: 2px dashed #007aff;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 20px;
+        h1 {
+            margin: 0 0 12px;
+            font-family: "DM Serif Display", Georgia, serif;
+            font-size: 40px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
-        .drop-zone:hover { background: #f0f7ff; }
-        #status { margin-top: 20px; font-weight: bold; }
-        .progress-container {
-            width: 100%;
-            background-color: #ddd;
-            border-radius: 4px;
-            margin-top: 10px;
-            display: none;
-        }
-        #progress-bar {
-            width: 0%;
-            height: 20px;
-            background-color: #007aff;
-            border-radius: 4px;
-            transition: width 0.1s;
+        p {
+            margin: 0 0 20px;
+            font-size: 16px;
         }
         .controls {
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 2px solid var(--navy);
+            background: var(--cream-strong);
         }
-        input[type="range"] { flex-grow: 1; }
+        .controls label {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 12px;
+        }
+        input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--navy);
+        }
+        .drop-zone {
+            border: 3px dashed var(--navy);
+            padding: 42px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease;
+            margin-bottom: 18px;
+            background: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .drop-zone:hover {
+            background: var(--cream-strong);
+            transform: translate(-2px, -2px);
+        }
+        .drop-zone.is-dragover {
+            background: var(--cream-strong);
+            transform: translate(-2px, -2px);
+        }
+        #status {
+            margin-top: 16px;
+            font-weight: 700;
+            padding: 8px 12px;
+            border: 2px solid var(--navy);
+            background: white;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: white;
+            border: 2px solid var(--navy);
+            margin-top: 10px;
+            display: none;
+            height: 22px;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--navy);
+            transition: width 0.1s;
+        }
+        @media (max-width: 640px) {
+            body {
+                margin: 16px auto 60px;
+                padding: 16px;
+            }
+            h1 {
+                font-size: 32px;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
     </style>
 </head>
 <body>
@@ -93,16 +162,16 @@
 
         dropZone.ondragover = (e) => {
             e.preventDefault();
-            dropZone.style.background = '#f0f7ff';
+            dropZone.classList.add('is-dragover');
         };
 
         dropZone.ondragleave = () => {
-            dropZone.style.background = 'white';
+            dropZone.classList.remove('is-dragover');
         };
 
         dropZone.ondrop = (e) => {
             e.preventDefault();
-            dropZone.style.background = 'white';
+            dropZone.classList.remove('is-dragover');
             const file = e.dataTransfer.files[0];
             if (file && file.name.endsWith('.epub')) {
                 processFile(file);
@@ -195,4 +264,3 @@
     </script>
 </body>
 </html>
-
