@@ -3,277 +3,901 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Compress images inside EPUB files privately in your browser. No uploads, no account, and no server-side processing.">
+    <meta name="theme-color" content="#0f2f2b">
+    <meta property="og:title" content="EPUB Image Optimizer">
+    <meta property="og:description" content="Reduce EPUB file size by optimizing embedded images entirely in your browser.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
     <title>EPUB Image Optimizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+        integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer">
+    </script>
     <style>
         :root {
-            --navy: #111a3a;
-            --navy-ink: #0a1026;
-            --cream: #fbf4e6;
-            --cream-strong: #f3e2bf;
-            --accent: #ff6b4a;
-            --accent-2: #ffd35a;
+            color-scheme: light;
+            --ink: #14211f;
+            --muted: #5e6a66;
+            --line: #1d3a35;
+            --paper: #fffef9;
+            --wash: #eef7f4;
+            --mint: #9ee6cf;
+            --gold: #f3c247;
+            --coral: #f06f4f;
+            --danger: #b42318;
+            --success: #176b4d;
+            --shadow: #0f2f2b;
         }
+
         * {
             box-sizing: border-box;
         }
-        body {
-            font-family: "DM Sans", "Segoe UI", Helvetica, Arial, sans-serif;
-            max-width: 760px;
-            min-height: 100vh;
-            margin: 0 auto;
-            padding: 48px 24px 80px;
-            line-height: 1.6;
+
+        html {
+            min-height: 100%;
             background:
-                radial-gradient(circle at 12% 10%, rgba(255, 107, 74, 0.18), transparent 40%),
-                radial-gradient(circle at 88% 12%, rgba(255, 211, 90, 0.22), transparent 45%),
-                linear-gradient(135deg, #fff1d6 0%, #fde6c0 45%, #f6f1e7 100%);
-            color: var(--navy);
+                linear-gradient(var(--wash) 1px, transparent 1px),
+                linear-gradient(90deg, var(--wash) 1px, transparent 1px),
+                var(--paper);
+            background-size: 28px 28px;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--ink);
+            line-height: 1.5;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        .page {
+            width: min(1120px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 36px 0 48px;
+        }
+
+        .app-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 24px;
+            align-items: end;
+            margin-bottom: 24px;
+        }
+
+        .brand {
             display: flex;
+            gap: 14px;
             align-items: center;
-            justify-content: center;
         }
-        .container {
-            background: var(--cream);
-            padding: 30px;
-            border: 4px solid var(--navy);
-            box-shadow: 14px 14px 0 var(--navy-ink);
-            width: 100%;
+
+        .brand-mark {
+            display: inline-grid;
+            width: 54px;
+            height: 54px;
+            place-items: center;
+            color: var(--ink);
+            background: var(--mint);
+            border: 3px solid var(--line);
+            box-shadow: 5px 5px 0 var(--shadow);
         }
+
+        .brand-mark svg {
+            width: 30px;
+            height: 30px;
+        }
+
         h1 {
-            margin: 0 0 12px;
-            font-family: "DM Serif Display", Georgia, serif;
-            font-size: 40px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            position: relative;
+            margin: 0;
+            max-width: 760px;
+            font-size: clamp(2rem, 5vw, 4.5rem);
+            line-height: 0.95;
+            letter-spacing: 0;
         }
-        h1::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            bottom: -8px;
-            width: 72px;
-            height: 6px;
-            background: var(--accent);
+
+        .lead {
+            max-width: 660px;
+            margin: 14px 0 0;
+            color: var(--muted);
+            font-size: clamp(1rem, 2vw, 1.18rem);
         }
-        p {
-            margin: 0 0 20px;
-            font-size: 16px;
-        }
-        .controls {
-            margin-bottom: 20px;
-            display: flex;
+
+        .source-link {
+            display: inline-flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            border: 2px solid var(--navy);
-            background: var(--cream-strong);
-            box-shadow: 6px 6px 0 rgba(17, 26, 58, 0.25);
-        }
-        .controls label {
+            gap: 8px;
+            min-height: 44px;
+            padding: 10px 14px;
+            color: var(--ink);
+            text-decoration: none;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 12px;
+            background: var(--paper);
+            border: 2px solid var(--line);
+            box-shadow: 4px 4px 0 var(--shadow);
         }
-        input[type="range"] {
-            flex-grow: 1;
-            accent-color: var(--accent);
+
+        .source-link:hover,
+        .source-link:focus-visible {
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0 var(--shadow);
         }
+
+        .source-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .tool-panel,
+        .results-panel {
+            background: var(--paper);
+            border: 3px solid var(--line);
+            box-shadow: 8px 8px 0 var(--shadow);
+        }
+
+        .tool-panel {
+            padding: 22px;
+        }
+
+        .results-panel {
+            padding: 20px;
+        }
+
         .drop-zone {
-            border: 3px dashed var(--navy);
-            padding: 42px 20px;
+            display: grid;
+            place-items: center;
+            min-height: 260px;
+            padding: 28px;
+            margin-bottom: 18px;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.15s ease, background 0.15s ease;
-            margin-bottom: 18px;
-            background: #fff;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            box-shadow: 8px 8px 0 rgba(17, 26, 58, 0.25);
+            background: #ffffff;
+            border: 3px dashed var(--line);
+            transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
         }
-        .drop-zone:hover {
-            background: var(--cream-strong);
-            transform: translate(-2px, -2px);
-        }
+
+        .drop-zone:hover,
+        .drop-zone:focus-within,
         .drop-zone.is-dragover {
-            background: var(--cream-strong);
+            background: #f6fbf9;
+            box-shadow: inset 0 0 0 6px var(--mint);
             transform: translate(-2px, -2px);
         }
-        #status {
-            margin-top: 16px;
-            font-weight: 700;
-            padding: 8px 12px;
-            border: 2px solid var(--navy);
-            background: white;
-            box-shadow: 6px 6px 0 rgba(17, 26, 58, 0.25);
+
+        .drop-zone.is-disabled {
+            cursor: wait;
+            opacity: 0.72;
         }
-        .progress-container {
+
+        .drop-content {
+            display: grid;
+            gap: 12px;
+            justify-items: center;
+        }
+
+        .drop-icon {
+            display: inline-grid;
+            width: 72px;
+            height: 72px;
+            place-items: center;
+            color: var(--ink);
+            background: var(--gold);
+            border: 3px solid var(--line);
+            box-shadow: 5px 5px 0 var(--shadow);
+        }
+
+        .drop-icon svg {
+            width: 36px;
+            height: 36px;
+        }
+
+        .drop-title {
+            display: block;
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .drop-detail {
+            display: block;
+            max-width: 420px;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .control {
+            display: grid;
+            gap: 8px;
+            min-width: 0;
+            padding: 14px;
+            background: #ffffff;
+            border: 2px solid var(--line);
+        }
+
+        .control label,
+        .control .label {
+            color: var(--ink);
+            font-weight: 800;
+        }
+
+        .control-hint {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .range-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 64px;
+            gap: 12px;
+            align-items: center;
+        }
+
+        input[type="range"] {
             width: 100%;
-            background-color: white;
-            border: 2px solid var(--navy);
-            margin-top: 10px;
-            display: none;
-            height: 22px;
-            box-shadow: 6px 6px 0 rgba(17, 26, 58, 0.25);
+            accent-color: var(--coral);
         }
+
+        .value-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 4px 8px;
+            font-weight: 800;
+            color: var(--ink);
+            background: var(--mint);
+            border: 2px solid var(--line);
+        }
+
+        select {
+            min-height: 44px;
+            width: 100%;
+            padding: 8px 10px;
+            color: var(--ink);
+            background: #ffffff;
+            border: 2px solid var(--line);
+            border-radius: 0;
+        }
+
+        .status-box {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+            padding: 14px;
+            background: #ffffff;
+            border: 2px solid var(--line);
+        }
+
+        #status {
+            margin: 0;
+            font-weight: 800;
+        }
+
+        #status.is-error {
+            color: var(--danger);
+        }
+
+        #status.is-success {
+            color: var(--success);
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 18px;
+            overflow: hidden;
+            background: #f2f4f2;
+            border: 2px solid var(--line);
+        }
+
         #progress-bar {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, var(--accent), var(--navy));
-            transition: width 0.1s;
+            background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint));
+            transition: width 140ms ease;
         }
-        @media (max-width: 640px) {
-            body { padding: 24px 16px 60px; }
-            h1 {
-                font-size: 32px;
+
+        .results-panel h2 {
+            margin: 0 0 14px;
+            font-size: 1.1rem;
+        }
+
+        .stat-list {
+            display: grid;
+            gap: 10px;
+            margin: 0 0 18px;
+        }
+
+        .stat {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #d5dedb;
+        }
+
+        .stat:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .stat span {
+            color: var(--muted);
+        }
+
+        .stat strong {
+            text-align: right;
+        }
+
+        .trust-list {
+            display: grid;
+            gap: 10px;
+            margin: 0;
+            padding: 16px 0 0;
+            border-top: 2px solid var(--line);
+            list-style: none;
+            color: var(--muted);
+        }
+
+        .trust-list li {
+            display: grid;
+            grid-template-columns: 22px minmax(0, 1fr);
+            gap: 8px;
+            align-items: start;
+        }
+
+        .trust-list svg {
+            width: 18px;
+            height: 18px;
+            margin-top: 3px;
+            color: var(--success);
+        }
+
+        .fine-print {
+            margin: 20px 0 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        a {
+            color: var(--ink);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
             }
+        }
+
+        @media (max-width: 820px) {
+            .page {
+                width: min(100% - 24px, 680px);
+                padding-top: 24px;
+            }
+
+            .app-header,
+            .app-grid,
             .controls {
-                flex-direction: column;
-                align-items: stretch;
+                grid-template-columns: 1fr;
+            }
+
+            .app-header {
+                align-items: start;
+            }
+
+            .source-link {
+                justify-self: start;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .page {
+                width: min(100% - 20px, 680px);
+            }
+
+            .brand {
+                align-items: flex-start;
+            }
+
+            .brand-mark {
+                width: 46px;
+                height: 46px;
+                box-shadow: 4px 4px 0 var(--shadow);
+            }
+
+            .tool-panel,
+            .results-panel {
+                box-shadow: 5px 5px 0 var(--shadow);
+            }
+
+            .tool-panel,
+            .results-panel,
+            .drop-zone {
+                padding: 16px;
+            }
+
+            .drop-zone {
+                min-height: 220px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>EPUB Optimizer</h1>
-        <p>Reduce EPUB size by compressing images. Works entirely in your browser.</p>
-        
-        <div class="controls">
-            <label for="quality">Quality: <span id="quality-val">80</span>%</label>
-            <input type="range" id="quality" min="10" max="100" value="80">
-        </div>
+    <main class="page">
+        <header class="app-header">
+            <div>
+                <div class="brand">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 4.5h9.2L19 9.3v10.2H5z"></path>
+                            <path d="M14 4.5v5h5"></path>
+                            <path d="M8.5 13h7"></path>
+                            <path d="M8.5 16h4.8"></path>
+                        </svg>
+                    </span>
+                    <h1>EPUB Image Optimizer</h1>
+                </div>
+                <p class="lead">Make oversized EPUBs smaller by resizing and recompressing embedded JPEG and PNG images directly in your browser.</p>
+            </div>
+            <a class="source-link" href="https://github.com/jschof1/epub-optimizer" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2.5A9.5 9.5 0 0 0 9 21c.48.09.65-.21.65-.46v-1.62c-2.67.58-3.23-1.13-3.23-1.13-.43-1.1-1.05-1.4-1.05-1.4-.86-.58.07-.57.07-.57.95.07 1.45.98 1.45.98.84 1.44 2.2 1.02 2.74.78.08-.61.33-1.02.6-1.25-2.13-.24-4.37-1.07-4.37-4.74 0-1.05.38-1.91.98-2.58-.1-.24-.43-1.22.09-2.54 0 0 .8-.26 2.62.98A9.1 9.1 0 0 1 12 7.1c.81 0 1.63.11 2.39.33 1.81-1.24 2.61-.98 2.61-.98.52 1.32.19 2.3.09 2.54.61.67.98 1.53.98 2.58 0 3.68-2.24 4.49-4.38 4.73.34.3.65.88.65 1.78v2.46c0 .25.17.55.66.46A9.5 9.5 0 0 0 12 2.5Z"></path>
+                </svg>
+                Source
+            </a>
+        </header>
 
-        <div class="drop-zone" id="drop-zone">
-            Click or drag EPUB file here
-            <input type="file" id="file-input" accept=".epub" style="display: none;">
-        </div>
+        <div class="app-grid">
+            <section class="tool-panel" aria-labelledby="optimizer-heading">
+                <h2 class="sr-only" id="optimizer-heading">Optimize an EPUB file</h2>
+                <label class="drop-zone" id="drop-zone" for="file-input">
+                    <span class="drop-content">
+                        <span class="drop-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3v12"></path>
+                                <path d="m7 10 5 5 5-5"></path>
+                                <path d="M5 20h14"></path>
+                            </svg>
+                        </span>
+                        <span class="drop-title">Drop an EPUB here</span>
+                        <span class="drop-detail">or choose a file to create an optimized copy. Your original file is never changed.</span>
+                    </span>
+                    <input class="file-input" type="file" id="file-input" accept=".epub,application/epub+zip">
+                </label>
 
-        <div id="status">Ready</div>
-        <div class="progress-container" id="progress-container">
-            <div id="progress-bar"></div>
+                <div class="controls" aria-label="Optimization settings">
+                    <div class="control">
+                        <label for="quality">JPEG quality</label>
+                        <div class="range-row">
+                            <input type="range" id="quality" min="45" max="95" value="78" step="1">
+                            <span class="value-pill"><span id="quality-val">78</span>%</span>
+                        </div>
+                        <p class="control-hint">Lower values save more space. Existing PNGs stay PNGs for reader compatibility.</p>
+                    </div>
+
+                    <div class="control">
+                        <label for="max-edge">Maximum image edge</label>
+                        <select id="max-edge">
+                            <option value="1200">1200 px</option>
+                            <option value="1600" selected>1600 px</option>
+                            <option value="2048">2048 px</option>
+                            <option value="0">Keep original size</option>
+                        </select>
+                        <p class="control-hint">Large images are scaled down before the EPUB is rebuilt.</p>
+                    </div>
+                </div>
+
+                <div class="status-box">
+                    <p id="status" aria-live="polite">Ready to optimize.</p>
+                    <div class="progress-track" aria-label="Optimization progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="results-panel" aria-labelledby="results-heading">
+                <h2 id="results-heading">Current run</h2>
+                <dl class="stat-list">
+                    <div class="stat">
+                        <span>Images optimized</span>
+                        <strong id="images-optimized">0</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Images kept original</span>
+                        <strong id="images-kept">0</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Original size</span>
+                        <strong id="original-size">-</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Optimized size</span>
+                        <strong id="optimized-size">-</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Saved</span>
+                        <strong id="saved-size">-</strong>
+                    </div>
+                </dl>
+
+                <ul class="trust-list">
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m5 12 4 4 10-9"></path>
+                        </svg>
+                        <span>Runs locally in your browser; EPUB files are not uploaded.</span>
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m5 12 4 4 10-9"></path>
+                        </svg>
+                        <span>Keeps the EPUB mimetype entry uncompressed for standards compliance.</span>
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m5 12 4 4 10-9"></path>
+                        </svg>
+                        <span>Compares every image and keeps the original if optimization would make it larger.</span>
+                    </li>
+                </ul>
+
+                <p class="fine-print">Best results come from EPUBs with oversized JPG or PNG artwork. DRM-protected books and unsupported image formats are copied through unchanged.</p>
+            </aside>
         </div>
-    </div>
+    </main>
 
     <script>
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const status = document.getElementById('status');
-        const progressBar = document.getElementById('progress-bar');
-        const progressContainer = document.getElementById('progress-container');
-        const qualityInput = document.getElementById('quality');
-        const qualityVal = document.getElementById('quality-val');
+        const dropZone = document.getElementById("drop-zone");
+        const fileInput = document.getElementById("file-input");
+        const statusText = document.getElementById("status");
+        const progressTrack = document.querySelector(".progress-track");
+        const progressBar = document.getElementById("progress-bar");
+        const qualityInput = document.getElementById("quality");
+        const qualityVal = document.getElementById("quality-val");
+        const maxEdgeInput = document.getElementById("max-edge");
+        const imageOptimizedEl = document.getElementById("images-optimized");
+        const imageKeptEl = document.getElementById("images-kept");
+        const originalSizeEl = document.getElementById("original-size");
+        const optimizedSizeEl = document.getElementById("optimized-size");
+        const savedSizeEl = document.getElementById("saved-size");
 
-        qualityInput.addEventListener('input', () => {
+        const imagePattern = /\.(jpe?g|png)$/i;
+
+        qualityInput.addEventListener("input", () => {
             qualityVal.textContent = qualityInput.value;
         });
 
-        dropZone.onclick = () => fileInput.click();
+        ["dragenter", "dragover"].forEach((eventName) => {
+            dropZone.addEventListener(eventName, (event) => {
+                event.preventDefault();
+                if (!dropZone.classList.contains("is-disabled")) {
+                    dropZone.classList.add("is-dragover");
+                }
+            });
+        });
 
-        dropZone.ondragover = (e) => {
-            e.preventDefault();
-            dropZone.classList.add('is-dragover');
-        };
+        ["dragleave", "drop"].forEach((eventName) => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove("is-dragover");
+            });
+        });
 
-        dropZone.ondragleave = () => {
-            dropZone.classList.remove('is-dragover');
-        };
+        dropZone.addEventListener("drop", (event) => {
+            event.preventDefault();
+            if (dropZone.classList.contains("is-disabled")) return;
 
-        dropZone.ondrop = (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('is-dragover');
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.epub')) {
-                processFile(file);
+            const file = event.dataTransfer.files[0];
+            handleSelectedFile(file);
+        });
+
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            handleSelectedFile(file);
+        });
+
+        async function handleSelectedFile(file) {
+            if (!file) return;
+
+            if (!/\.epub$/i.test(file.name)) {
+                setStatus("Choose a file ending in .epub.", "error");
+                fileInput.value = "";
+                return;
             }
-        };
 
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) processFile(file);
-        };
+            await processFile(file);
+            fileInput.value = "";
+        }
 
         async function processFile(file) {
-            status.textContent = "Extracting EPUB...";
-            progressContainer.style.display = 'block';
-            progressBar.style.width = '0%';
-            
-            try {
-                const zip = await JSZip.loadAsync(file);
-                const newZip = new JSZip();
-                const quality = parseInt(qualityInput.value) / 100;
-                
-                const fileList = Object.keys(zip.files);
-                let processedCount = 0;
+            setBusy(true);
+            resetStats(file.size);
+            setProgress(0);
+            setStatus("Reading EPUB package...");
 
-                // EPUB standard: mimetype must be first and uncompressed
-                if (zip.file("mimetype")) {
-                    newZip.file("mimetype", await zip.file("mimetype").async("string"), { compression: "STORE" });
+            try {
+                if (!window.JSZip) {
+                    throw new Error("The ZIP engine did not load. Check your connection and refresh the page.");
                 }
 
-                for (const path of fileList) {
-                    if (path === "mimetype") continue;
+                const zip = await JSZip.loadAsync(file);
+                const mimetypeEntry = zip.file("mimetype");
 
-                    const entry = zip.file(path);
-                    if (!entry || entry.dir) {
-                        if (entry && entry.dir) newZip.folder(path);
+                if (!mimetypeEntry) {
+                    throw new Error("This file is missing the EPUB mimetype entry.");
+                }
+
+                const mimetype = (await mimetypeEntry.async("string")).trim();
+                if (mimetype !== "application/epub+zip") {
+                    throw new Error("This does not look like a valid EPUB file.");
+                }
+
+                const newZip = new JSZip();
+                const quality = Number(qualityInput.value) / 100;
+                const maxEdge = Number(maxEdgeInput.value);
+                const paths = Object.keys(zip.files);
+                const copyOptions = { binary: true };
+                const stats = {
+                    optimized: 0,
+                    kept: 0,
+                    originalImages: 0,
+                    optimizedImages: 0
+                };
+
+                newZip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+                let handled = 0;
+                for (const path of paths) {
+                    if (path === "mimetype") {
+                        handled++;
+                        setProgress(Math.round((handled / paths.length) * 86));
                         continue;
                     }
 
-                    const isImage = /\.(jpg|jpeg|png)$/i.test(path);
-                    
-                    if (isImage) {
-                        status.textContent = `Optimizing ${path.split('/').pop()}...`;
-                        const blob = await entry.async("blob");
-                        const optimizedBlob = await optimizeImage(blob, quality);
-                        newZip.file(path, optimizedBlob);
-                    } else {
-                        newZip.file(path, await entry.async("blob"));
+                    const entry = zip.files[path];
+
+                    if (!entry) {
+                        handled++;
+                        continue;
                     }
 
-                    processedCount++;
-                    progressBar.style.width = `${(processedCount / fileList.length) * 100}%`;
+                    if (entry.dir) {
+                        newZip.folder(path.replace(/\/$/, ""));
+                        handled++;
+                        setProgress(Math.round((handled / paths.length) * 86));
+                        continue;
+                    }
+
+                    const isImage = imagePattern.test(path);
+                    const originalBlob = await entry.async("blob");
+
+                    if (isImage) {
+                        const fileName = path.split("/").pop();
+                        setStatus(`Optimizing ${fileName}...`);
+                        const optimizedBlob = await optimizeImage(originalBlob, path, quality, maxEdge);
+
+                        stats.originalImages += originalBlob.size;
+
+                        if (optimizedBlob && optimizedBlob.size < originalBlob.size) {
+                            newZip.file(path, optimizedBlob, copyOptions);
+                            stats.optimized += 1;
+                            stats.optimizedImages += optimizedBlob.size;
+                        } else {
+                            newZip.file(path, originalBlob, copyOptions);
+                            stats.kept += 1;
+                            stats.optimizedImages += originalBlob.size;
+                        }
+                    } else {
+                        newZip.file(path, originalBlob, copyOptions);
+                    }
+
+                    handled++;
+                    updateStats(stats);
+                    setProgress(Math.round((handled / paths.length) * 86));
                 }
 
-                status.textContent = "Packaging EPUB...";
-                const content = await newZip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
-                
-                const url = URL.createObjectURL(content);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name.replace('.epub', ' (Optimized).epub');
-                a.click();
-                
-                status.textContent = "Done! Download started.";
-                progressBar.style.width = '100%';
-            } catch (err) {
-                console.error(err);
-                status.textContent = "Error: " + err.message;
+                setStatus("Rebuilding optimized EPUB...");
+                const content = await newZip.generateAsync(
+                    {
+                        type: "blob",
+                        mimeType: "application/epub+zip",
+                        compression: "DEFLATE",
+                        compressionOptions: { level: 9 }
+                    },
+                    (metadata) => {
+                        setProgress(86 + Math.round(metadata.percent * 0.14));
+                    }
+                );
+
+                const savedBytes = Math.max(0, file.size - content.size);
+                optimizedSizeEl.textContent = formatBytes(content.size);
+                savedSizeEl.textContent = savedBytes > 0
+                    ? `${formatBytes(savedBytes)} (${formatPercent(savedBytes / file.size)})`
+                    : "No reduction";
+
+                downloadBlob(content, buildOutputName(file.name));
+                setProgress(100);
+                setStatus(savedBytes > 0
+                    ? `Done. Download started and ${formatBytes(savedBytes)} was saved.`
+                    : "Done. Download started, but this EPUB was already tightly compressed.",
+                "success");
+            } catch (error) {
+                console.error(error);
+                setStatus(error.message || "Something went wrong while optimizing this EPUB.", "error");
+            } finally {
+                setBusy(false);
             }
         }
 
-        async function optimizeImage(blob, quality) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // Always convert to JPEG for best compression in books
-                    canvas.toBlob((result) => {
-                        resolve(result || blob);
-                    }, 'image/jpeg', quality);
-                };
-                img.onerror = () => resolve(blob);
-                img.src = URL.createObjectURL(blob);
+        async function optimizeImage(blob, path, quality, maxEdge) {
+            const imageUrl = URL.createObjectURL(blob);
+
+            try {
+                const image = await loadImage(imageUrl);
+                const target = getTargetSize(image.naturalWidth || image.width, image.naturalHeight || image.height, maxEdge);
+                const canvas = document.createElement("canvas");
+                canvas.width = target.width;
+                canvas.height = target.height;
+
+                const context = canvas.getContext("2d", { alpha: /\.png$/i.test(path) });
+                if (!context) return blob;
+
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = "high";
+
+                if (/\.jpe?g$/i.test(path)) {
+                    context.fillStyle = "#ffffff";
+                    context.fillRect(0, 0, target.width, target.height);
+                    context.drawImage(image, 0, 0, target.width, target.height);
+                    return await canvasToBlob(canvas, "image/jpeg", quality);
+                }
+
+                context.clearRect(0, 0, target.width, target.height);
+                context.drawImage(image, 0, 0, target.width, target.height);
+                return await canvasToBlob(canvas, "image/png");
+            } catch (error) {
+                console.warn(`Could not optimize ${path}:`, error);
+                return blob;
+            } finally {
+                URL.revokeObjectURL(imageUrl);
+            }
+        }
+
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => reject(new Error("Could not decode one of the embedded images."));
+                image.src = url;
             });
+        }
+
+        function canvasToBlob(canvas, type, quality) {
+            return new Promise((resolve) => {
+                canvas.toBlob((result) => {
+                    resolve(result);
+                }, type, quality);
+            });
+        }
+
+        function getTargetSize(width, height, maxEdge) {
+            if (!maxEdge || Math.max(width, height) <= maxEdge) {
+                return { width, height };
+            }
+
+            const scale = maxEdge / Math.max(width, height);
+            return {
+                width: Math.max(1, Math.round(width * scale)),
+                height: Math.max(1, Math.round(height * scale))
+            };
+        }
+
+        function buildOutputName(fileName) {
+            return fileName.replace(/\.epub$/i, "") + "-optimized.epub";
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function resetStats(originalBytes) {
+            imageOptimizedEl.textContent = "0";
+            imageKeptEl.textContent = "0";
+            originalSizeEl.textContent = formatBytes(originalBytes);
+            optimizedSizeEl.textContent = "-";
+            savedSizeEl.textContent = "-";
+        }
+
+        function updateStats(stats) {
+            imageOptimizedEl.textContent = stats.optimized;
+            imageKeptEl.textContent = stats.kept;
+        }
+
+        function setStatus(message, state = "") {
+            statusText.textContent = message;
+            statusText.classList.toggle("is-error", state === "error");
+            statusText.classList.toggle("is-success", state === "success");
+        }
+
+        function setProgress(value) {
+            const clamped = Math.min(100, Math.max(0, value));
+            progressBar.style.width = `${clamped}%`;
+            progressTrack.setAttribute("aria-valuenow", String(clamped));
+        }
+
+        function setBusy(isBusy) {
+            dropZone.classList.toggle("is-disabled", isBusy);
+            fileInput.disabled = isBusy;
+            qualityInput.disabled = isBusy;
+            maxEdgeInput.disabled = isBusy;
+        }
+
+        function formatBytes(bytes) {
+            if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+
+            const units = ["B", "KB", "MB", "GB"];
+            const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+            const value = bytes / Math.pow(1024, exponent);
+
+            return `${value >= 10 || exponent === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[exponent]}`;
+        }
+
+        function formatPercent(value) {
+            return `${Math.round(value * 100)}%`;
         }
     </script>
 </body>
